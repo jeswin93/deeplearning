@@ -1,1 +1,3 @@
 /RNN/.idea/*
+*/.idea/*
+/RNN/__pycache__/utils.cpython-38.pyc
