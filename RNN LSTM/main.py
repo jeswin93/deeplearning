@@ -45,17 +45,29 @@ for i in range(6):
     plt.imshow(example_data[i][0], cmap='gray')
 plt.show()
 
+
 # Fully connected neural network with one hidden layer
 class RNN_LSTM(nn.Module):
     def __init__(self, input_size, hidden_size, num_classes,  num_layers):
         super(RNN_LSTM, self).__init__()
         self.input_size = input_size
-        self.hidden_size =  nn.RNN(input_size, hidden_size, num_layers, batch_first=True)
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.rnn = nn.RNN(input_size, hidden_size, num_layers, batch_first=True)
+        self.linear = nn.Linear(hidden_size, num_classes)
     
     def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        out, _ = self.rnn(x,  h0)
+        # output from the about statement will have the  output for the  whole  sequence
+        # we only need the output of  the last sequence
+        # so we  do this
+        out = out[:, -1, :]
+        out = self.linear(out)
+        return out
 
 
-model = RNN_LSTM(input_size, hidden_size, num_classes).to(device)
+model = RNN_LSTM(input_size, hidden_size, num_classes, num_layers).to(device)
 
 # Loss and optimizer
 criterion = nn.CrossEntropyLoss()
@@ -67,7 +79,7 @@ for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):  
         # origin shape: [100, 1, 28, 28]
         # resized: [100, 784]
-        images = images.reshape(-1, 28, 28).to(device)
+        images = images.reshape(-1, sequence_length, input_size).to(device)
         labels = labels.to(device)
         
         # Forward pass
@@ -88,7 +100,7 @@ with torch.no_grad():
     n_correct = 0
     n_samples = 0
     for images, labels in test_loader:
-        images = images.reshape(-1, 28*28).to(device)
+        images = images.reshape(-1, sequence_length, input_size).to(device)
         labels = labels.to(device)
         outputs = model(images)
         # max returns (value ,index)
